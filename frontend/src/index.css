@@ -1,0 +1,82 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+.neon-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  background: linear-gradient(
+    135deg,
+    #0f0c29,
+    #1a1a40,
+    #2b0f54,
+    #0d1b2a,
+    #120a2a
+  );
+  background-size: 400% 400%;
+  animation: neonGlow 18s ease infinite;
+  z-index: 0;
+}
+
+@keyframes neonGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.line {
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background: rgba(0, 255, 255, 0.5);
+  top: 0;
+  filter: drop-shadow(0 0 10px cyan);
+  animation: moveLine 5s linear infinite;
+}
+
+.line1 { left: 10%; animation-duration: 6s; }
+.line2 { left: 30%; animation-duration: 8s; }
+.line3 { left: 50%; animation-duration: 7s; }
+.line4 { left: 70%; animation-duration: 5s; }
+
+@keyframes moveLine {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.App {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+  color: white;
+  text-align: center;
+}
+
+input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  margin-right: 1rem;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+
+
+
+
+
