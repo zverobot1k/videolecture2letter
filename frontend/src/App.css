@@ -1,63 +1,100 @@
-.App {
-  position: relative;
-  width: 100%;
-  height: 100%;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+.screen {
+  height: 100vh;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 1;
-  color: white;
-  text-align: center;
-  gap: 1rem;
+  background: #c6d8e6;
+}
+
+.card {
+  width: 450px;
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 h1 {
-  font-size: 3rem;
-  color: #00fff0;
-  text-shadow: 0 0 5px #00fff0, 0 0 10px #ff00ff, 0 0 15px #ff007f;
+  text-align: center;
+  font-size: 24px;
+  color: #2f4f6f;
 }
 
-@keyframes neonText {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+.subtitle {
+  font-size: 14px;
+  color: #5a6f82;
 }
 
 input {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  border: 2px solid #00fff0;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.3);
-  color: white;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #d0d7de;
+  font-size: 14px;
   outline: none;
-  box-shadow: 0 0 10px #00fff0;
-  transition: all 0.3s ease;
 }
 
 input:focus {
-  border-color: #ff00ff;
-  box-shadow: 0 0 15px #ff00ff;
-  transform: scale(1.05);
+  border-color: #4f7cac;
 }
 
-button {
-  padding: 0.7rem 1.5rem;
-  font-size: 1rem;
-  font-weight: bold;
-  color: #fff;
-  background: linear-gradient(45deg, #ff00ff, #00fff0, #ff007f);
+.create-button {
+  padding: 14px;
   border: none;
-  border-radius: 15px;
+  border-radius: 12px;
+  background: #5b7fa6;
+  color: white;
+  font-size: 15px;
   cursor: pointer;
-  text-shadow: 0 0 5px #fff;
-  box-shadow: 0 0 2px #ff00ff, 0 0 4px #00fff0, 0 0 6px #ff007f;
-  transition: all 0.3s ease;
+  transition: 0.2s;
 }
 
-button:hover {
-  background: linear-gradient(45deg, #00fff0, #ff007f, #ff00ff);
-  box-shadow: 0 0 1px #00fff0, 0 0 2px #ff007f, 0 0 3px #ff00ff;
-  transform: scale(1.05);
+.create-button:hover {
+  background: #4a6c8f;
 }
 
+.result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: #eef3f7;
+  padding: 20px;
+  border-radius: 15px;
+}
+
+.success {
+  font-size: 14px;
+  color: #2f4f6f;
+  margin-bottom: 5px;
+}
+
+.title {
+  font-size: 13px;
+  color: #5a6f82;
+}
+
+.download-button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #5b7fa6;
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.download-button:hover {
+  background: #4a6c8f;
+}
