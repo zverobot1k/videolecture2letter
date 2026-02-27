@@ -40,10 +40,10 @@ def transcribe_audio(file_path):
     print(f"Транскрибация сохранена в: {transcript_path}")
 
 if __name__ == "__main__":
-    video_url = input("Сслыку быстро: ").strip()
+    video_url = input("Сслыка: ").strip()
 
     if not video_url:
-        print("Нету ссылки даун!")
+        print("Нету ссылки!")
     else:
         print("Скачиваю mp3...")
         mp3_file = download_mp3(video_url)
@@ -51,4 +51,4 @@ if __name__ == "__main__":
 
         print("Транскрибирую аудио...")
         transcribe_audio(mp3_file)
-        print("Сосать)")
+        print("Готово")
