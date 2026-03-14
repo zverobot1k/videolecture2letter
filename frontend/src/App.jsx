@@ -1,5 +1,6 @@
 import "./App.css";
 import { useState } from "react";
+import { api } from "frontend\api\api_client.js";
 
 function App() {
     const [videoURL, setVideoURL] = useState("");
@@ -15,20 +16,13 @@ function App() {
             alert("Вставьте ссылку на видео!")
             return
         }
-
+        
         setLoading(true);
         setError(null);
 
         try{
-            const response = await fetch(
-                `http://127.0.0.1:${port}/process`, {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({url: videoURL})
-                }
-            );
+            await api.handleVideo(videoURL);
+
             
             if(!response.ok){
                 throw new Error(`[ERROR]: ${response.status}`);
@@ -62,7 +56,7 @@ function App() {
 
                 <button
                     className="create-button"
-                    onClick={() => setIsCreated(true)}
+                    onClick={() => handleCreateSummary()}
                     disabled={loading}
                 >
                     {loading ? "Обработка видео..." : "Сделать конспект"}
