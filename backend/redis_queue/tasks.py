@@ -1,23 +1,34 @@
+import logging
+
 from rq import Queue
 from backend.redis_queue.redis_connection import redis_conn
 from backend.services.summarizer import process_video
 
 q = Queue(connection=redis_conn)
+logger = logging.getLogger(__name__)
 
 def enqueue_video(url: str):
     job = q.enqueue(process_video, url, job_timeout=3600)
+    logger.info("Enqueued job id=%s queue=%s url=%s", job.id, q.name, url)
     return job.id
 
 def get_job_status(job_id: str):
     job = q.fetch_job(job_id)
     if not job:
-        return "not found"
-    if job.is_finished:
+        logger.warning("Job not found id=%s", job_id)
+        return {"status": "not_found"}
+
+    # Force-refresh status from Redis to avoid stale state in long polling.
+    current_status = job.get_status(refresh=True)
+    logger.info("Job status id=%s status=%s", job_id, current_status)
+
+    if current_status == "finished":
         return {"status": "done", "result": job.result}
-    elif job.is_queued:
-        return {"status": "queued"}
-    elif job.is_started:
+    if current_status == "queued":
+        position = q.get_job_position(job)
+        return {"status": "queued", "position": position}
+    if current_status == "started":
         return {"status": "started"}
-    elif job.is_failed:
+    if current_status == "failed":
         return {"status": "failed", "result": str(job.exc_info)}
-    return {"status": "unknown"}
+    return {"status": current_status or "unknown"}

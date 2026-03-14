@@ -54,4 +54,8 @@ typer-slim==0.24.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 urllib3==2.6.3
+uvicorn==0.38.0
 yt-dlp==2026.2.21
+redis==6.4.0
+rq==2.6.1
+ollama==0.6.1
