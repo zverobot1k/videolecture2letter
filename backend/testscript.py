@@ -29,10 +29,10 @@ def download_mp3(url, output_folder="downloads"):
 
 #Транскрибация
 def transcribe_audio(file_path):
-    devicewhisper = "cpu"
+    devicewhisper = "сpu"
     print(f"Использую: {devicewhisper}")
 
-    model = whisper.load_model("small").to(devicewhisper)
+    model = whisper.load_model("tiny").to(devicewhisper)
     result = model.transcribe(file_path)
 
     transcript_path = file_path.rsplit(".", 1)[0] + ".txt"
@@ -73,9 +73,9 @@ def create_summary(transcript_path):
     for i, chunk in enumerate(chunks, 1):
         print(f"Создаю конспект для чанка {i}/{len(chunks)}...")
         response = chat(
-            model="gemma3",
+            model="gemma3:1b",
             messages=[
-                {"role": "system", "content": "Ты — ассистент, который делает краткие и структурированные конспекты текста."},
+                {"role": "system", "content": "Ты — ассистент, который делает краткие и структурированные конспекты текста ТОЛЬКО на РУССКОМ языке."},
                 {"role": "user", "content": chunk}
             ]
         )
@@ -91,10 +91,10 @@ def create_summary(transcript_path):
 
 
 if __name__ == "__main__":
-    video_url = input("Ссылка: ").strip()
+    video_url = input("Сслыка: ").strip()
 
     if not video_url:
-        print("Нет ссылки!")
+        print("Нету ссылки!")
     else:
         print("Скачиваю mp3...")
         mp3_file = download_mp3(video_url)

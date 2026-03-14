@@ -43,7 +43,7 @@ def create_summary(transcript_path):
         summary = summarize_chunk(chunk, i, len(chunks))
         partial_summaries.append(summary)
 
-        time.sleep(1)  # маленькая пауза, чтобы не нагружать M2
+        time.sleep(1) 
 
     print("Делаю финальное сжатие...")
 
@@ -74,5 +74,7 @@ def create_summary(transcript_path):
 
     return summary_path
 
+max = "/Users/maksimblohin/PycharmProjects/softwarePR/test.txt"
+vlad = "D:\Prog\vyzrepos\SPO\k2s2\prac1"
 
-create_summary("/Users/maksimblohin/PycharmProjects/softwarePR/test.txt")
+create_summary(vlad) #ДУМАЮ ДОСТАТОЧНО ВАЖНО НЕ ЗАБЫТЬ ПОМЕНЯТЬ
