@@ -12,4 +12,4 @@ async def process_video_route(data: YoutubeRequest):
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task_status(task_id: str):
     status = get_job_status(task_id)
-    return {"task_id": task_id, "status": status["status"], "responce": {summary_file}}
+    return {"task_id": task_id, "status": status["status"], "response": {summary_file}}

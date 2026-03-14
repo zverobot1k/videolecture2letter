@@ -1,0 +1,6 @@
+venv/
+.env
+
+downloads/
+
+node_modules/
