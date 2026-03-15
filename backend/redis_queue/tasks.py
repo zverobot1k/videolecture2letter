@@ -18,7 +18,6 @@ def get_job_status(job_id: str):
         logger.warning("Job not found id=%s", job_id)
         return {"status": "not_found"}
 
-    # Force-refresh status from Redis to avoid stale state in long polling.
     current_status = job.get_status(refresh=True)
     logger.info("Job status id=%s status=%s", job_id, current_status)
 

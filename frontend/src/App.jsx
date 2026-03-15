@@ -1,43 +1,141 @@
 import "./App.css";
-import { useState } from "react";
-import { api } from "frontend\api\api_client.js";
+import { useEffect, useState } from "react";
+import { api } from "../api/api_client.js";
+
+const PROCESS_API_BASE = "http://localhost:8000/process";
+
+function extractFileName(contentDispositionHeader) {
+    if (!contentDispositionHeader) {
+        return "summary.txt";
+    }
+
+    const match = contentDispositionHeader.match(/filename="?([^";]+)"?/i);
+    return match ? match[1] : "summary.txt";
+}
+
+async function fetchTaskState(taskId) {
+    const response = await fetch(`${PROCESS_API_BASE}/${taskId}`);
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+        const data = await response.json();
+        return { kind: "json", data };
+    }
+
+    const blob = await response.blob();
+    const filename = extractFileName(response.headers.get("content-disposition"));
+    return { kind: "file", blob, filename };
+}
 
 function App() {
     const [videoURL, setVideoURL] = useState("");
     const [isCreated, setIsCreated] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [taskId, setTaskId] = useState(null)
-    const [error, setError] = useState(null)
+    const [taskId, setTaskId] = useState(null);
+    const [taskStatus, setTaskStatus] = useState(null);
+    const [error, setError] = useState(null);
+    const [downloadReady, setDownloadReady] = useState(false);
 
-    const port = 8000;
+    useEffect(() => {
+        if (!taskId || downloadReady || taskStatus === "failed") {
+            return undefined;
+        }
+
+        let cancelled = false;
+
+        const poll = async () => {
+            try {
+                const state = await fetchTaskState(taskId);
+                if (cancelled) {
+                    return;
+                }
+
+                if (state.kind === "json") {
+                    const nextStatus = state.data.status || "unknown";
+                    setTaskStatus(nextStatus);
+                    if (nextStatus === "failed") {
+                        setError(state.data.error || "Задача завершилась с ошибкой");
+                    }
+                    return;
+                }
+
+                setTaskStatus("done");
+                setDownloadReady(true);
+                setError(null);
+            } catch (err) {
+                if (!cancelled) {
+                    setError(err.message || "Не удалось получить статус задачи");
+                }
+            }
+        };
+
+        poll();
+        const intervalId = setInterval(poll, 5000);
+
+        return () => {
+            cancelled = true;
+            clearInterval(intervalId);
+        };
+    }, [taskId, downloadReady, taskStatus]);
 
     const handleCreateSummary = async () => {
-        if(!videoURL){
-            alert("Вставьте ссылку на видео!")
-            return
+        if (!videoURL) {
+            alert("Вставьте ссылку на видео!");
+            return;
         }
-        
+
         setLoading(true);
         setError(null);
+        setDownloadReady(false);
+        setTaskStatus(null);
+        setTaskId(null);
 
-        try{
-            await api.handleVideo(videoURL);
-
-            
-            if(!response.ok){
-                throw new Error(`[ERROR]: ${response.status}`);
-            }
-
-            const data = await response.json();
+        try {
+            const data = await api.handleVideo(videoURL);
             setTaskId(data.task_id);
+            setTaskStatus(data.status || "queued");
             setIsCreated(true);
-        } catch(err){
+        } catch (err) {
             setError(err.message);
-            console.error('[ERROR]: ', err);
-        } finally{
+            console.error("[ERROR]: ", err);
+        } finally {
             setLoading(false);
         }
-    }
+    };
+
+    const handleDownload = async () => {
+        if (!taskId) {
+            return;
+        }
+
+        setError(null);
+
+        try {
+            const state = await fetchTaskState(taskId);
+            if (state.kind === "json") {
+                const nextStatus = state.data.status || "unknown";
+                setTaskStatus(nextStatus);
+                if (nextStatus === "failed") {
+                    setError(state.data.error || "Задача завершилась с ошибкой");
+                }
+                return;
+            }
+
+            setTaskStatus("done");
+            setDownloadReady(true);
+
+            const url = window.URL.createObjectURL(state.blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = state.filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            setError(err.message || "Не удалось скачать файл");
+        }
+    };
 
     return (
         <div className="screen">
@@ -72,16 +170,16 @@ function App() {
                     <div className="result">
                         <div>
                             <p className="success">Конспект успешно создан!</p>
-                            <p className="title">Заголовок: Пример статьи</p>
+                            <p className="title">Статус: {taskStatus || "queued"}</p>
                             {taskId && (
-                                <p className="task-id" style={{ fontSize: '12px', color: '#666' }}>
+                                <p className="task-id" style={{ fontSize: "12px", color: "#666" }}>
                                     Task ID: {taskId}
                                 </p>
                             )}
                         </div>
 
-                        <button className="download-button">
-                            Скачать файл
+                        <button className="download-button" onClick={handleDownload} disabled={!taskId || loading}>
+                            {downloadReady ? "Скачать файл" : "Проверить и скачать"}
                         </button>
                     </div>
                 )}

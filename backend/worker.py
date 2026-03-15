@@ -25,7 +25,5 @@ if __name__ == "__main__":
     queues = [Queue(name, connection=redis_conn) for name in listen]
     logger.info("Worker listening queues=%s", [queue.name for queue in queues])
 
-    # SimpleWorker runs jobs in-process (no fork), which avoids common
-    # macOS crashes with torch/whisper in RQ work-horse subprocesses.
     worker = SimpleWorker(queues)
     worker.work(logging_level="INFO")
