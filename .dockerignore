@@ -1,0 +1,17 @@
+.git
+.gitignore
+.idea
+.vscode
+.venv
+.venv-clean
+node_modules
+frontend/node_modules
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.log
+.DS_Store
+dump.rdb
+frontend
