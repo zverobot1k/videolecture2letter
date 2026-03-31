@@ -7,7 +7,7 @@
 - Python 3.14+
 - Node.js 22.12+
 - Docker 29.2.1+
-- Docker Compose (plugin v2)
+- Docker Compose (plugin v5.1)
 - Git
 
 Проверка установок:
