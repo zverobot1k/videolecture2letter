@@ -123,6 +123,7 @@ function App() {
     const [taskStatus, setTaskStatus] = useState(null);
     const [error, setError] = useState(null);
     const [downloadReady, setDownloadReady] = useState(false);
+    const [size, setSize] = useState('medium'); // short, medium, detailed
     const [statusMessage, setStatusMessage] = useState("Ожидание запуска");
     const [taskStage, setTaskStage] = useState("queued");
 
@@ -287,7 +288,26 @@ function App() {
             setError(err.message || "Не удалось скачать файл");
         }
     };
+/*
+    const handleStatus = () => {
+        switch(taskStatus){
+            case null:
+                return "Ожидание ссылки...";
+            case("queued"):
+                return "В очереди...";
+            case("failed"):
+                return "Ошибка!";
+            case("done"):
+                return "Готово!";
+            default:
+                console.log(`Неизвестное состояние: ${taskStatus}`);
+                return "Неизвестное состояние...";
+        }
+    };*/
 
+    const handleSize = (size) => {
+        setSize(size);
+    };
     return (
         <div className="screen">
             <div className="card">
@@ -298,10 +318,16 @@ function App() {
                 <input
                     type="text"
                     placeholder="Ссылка на лекцию"
-                    value={videoURL}
+                    value={videoURL}    
                     onChange={(e) => setVideoURL(e.target.value)}
                     disabled={loading}
                 />
+
+                <div className="size-buttons">
+                    <button className="size-button" onClick={() => handleSize('short')} style={{backgroundColor: size === 'short' ? '#1c4269' : '#5b7fa6'}}>Краткий</button>
+                    <button className="size-button" onClick={() => handleSize('medium')} style={{backgroundColor: size === 'medium' ? '#1c4269' : '#5b7fa6'}}>Сжатый</button>
+                    <button className="size-button" onClick={() => handleSize('detailed')} style={{backgroundColor: size === 'detailed' ? '#1c4269' : '#5b7fa6'}} >Крупный</button>
+                </div>
 
                 <button
                     className="create-button"
