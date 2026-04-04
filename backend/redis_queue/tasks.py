@@ -19,15 +19,16 @@ def get_job_status(job_id: str):
         return {"status": "not_found"}
 
     current_status = job.get_status(refresh=True)
+    stage = job.meta.get("stage")
     logger.info("Job status id=%s status=%s", job_id, current_status)
 
     if current_status == "finished":
-        return {"status": "done", "result": job.result}
+        return {"status": "done", "stage": stage or "done", "result": job.result}
     if current_status == "queued":
         position = q.get_job_position(job)
-        return {"status": "queued", "position": position}
+        return {"status": "queued", "stage": stage or "queued", "position": position}
     if current_status == "started":
-        return {"status": "started"}
+        return {"status": "started", "stage": stage or "extract_audio"}
     if current_status == "failed":
-        return {"status": "failed", "result": str(job.exc_info)}
-    return {"status": current_status or "unknown"}
+        return {"status": "failed", "stage": stage or "failed", "result": str(job.exc_info)}
+    return {"status": current_status or "unknown", "stage": stage or "unknown"}
