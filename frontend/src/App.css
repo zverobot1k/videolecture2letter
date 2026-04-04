@@ -67,10 +67,55 @@ input:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
 
   background: #eef3f7;
   padding: 20px;
   border-radius: 15px;
+}
+
+.result-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.todo-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.todo-marker {
+  width: 14px;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.todo-pending {
+  color: #7d8b99;
+}
+
+.todo-active {
+  color: #2f4f6f;
+  font-weight: 600;
+}
+
+.todo-done {
+  color: #356a46;
+}
+
+.todo-error {
+  color: #a74040;
+  font-weight: 600;
 }
 
 .success {
@@ -82,6 +127,12 @@ input:focus {
 .title {
   font-size: 13px;
   color: #5a6f82;
+}
+
+.task-id {
+  font-size: 12px;
+  color: #6f7f8e;
+  word-break: break-all;
 }
 
 .download-button {
@@ -97,4 +148,20 @@ input:focus {
 
 .download-button:hover {
   background: #4a6c8f;
+}
+
+@media (max-width: 600px) {
+  .card {
+    width: 92vw;
+    padding: 24px;
+  }
+
+  .result {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .download-button {
+    width: 100%;
+  }
 }

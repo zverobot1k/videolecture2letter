@@ -5,7 +5,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# ffmpeg is required by yt-dlp/whisper audio pipeline.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg git \
     && rm -rf /var/lib/apt/lists/*

@@ -1,10 +1,19 @@
+import logging
 import os
+import re
+from functools import lru_cache
+
 import whisper
 import yt_dlp
 import torch
-from ollama import chat
+from rq import get_current_job
+from ollama import chat, list as list_models, pull as pull_model
 
 torch.set_num_threads(1)
+logger = logging.getLogger(__name__)
+
+OLLAMA_MODEL = os.getenv("OLLAMA_SUMMARY_MODEL", "gemma3")
+FALLBACK_MODEL = os.getenv("OLLAMA_FALLBACK_MODEL", "gemma3:1b")
 
 prompt_gemma = """Сделай подробный конспект видео.
 
@@ -28,14 +37,39 @@ prompt_gemma = """Сделай подробный конспект видео.
 """
 
 
+def build_safe_stem(title: str, video_id: str | None) -> str:
+    raw_title = (title or "video").strip()
+    # Убираем символы, которые могут быть интерпретированы как путь или спец-символы ОС.
+    sanitized = re.sub(r"[\\/:*?\"<>|\x00-\x1f]+", "_", raw_title)
+    sanitized = re.sub(r"\s+", " ", sanitized).strip(" ._")
+    if not sanitized:
+        sanitized = "video"
+
+    safe_video_id = re.sub(r"[^A-Za-z0-9_-]+", "", (video_id or ""))
+    if safe_video_id:
+        return f"{sanitized}_{safe_video_id}"
+    return sanitized
+
+
 #Получение mp3
 def download_mp3(url, output_folder="downloads"):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
+    info_opts = {
+        'quiet': True,
+        'skip_download': True,
+    }
+    with yt_dlp.YoutubeDL(info_opts) as ydl:
+        info_dict = ydl.extract_info(url, download=False)
+
+    title = info_dict.get('title', 'audio')
+    video_id = info_dict.get('id')
+    safe_stem = build_safe_stem(title, video_id)
+
     ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': f'{output_folder}/%(title)s.%(ext)s',
+        'outtmpl': os.path.join(output_folder, f'{safe_stem}.%(ext)s'),
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -45,9 +79,8 @@ def download_mp3(url, output_folder="downloads"):
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=True)
-        title = info_dict.get('title', 'audio')
-        file_path = os.path.join(output_folder, f"{title}.mp3")
+        ydl.extract_info(url, download=True)
+        file_path = os.path.join(output_folder, f"{safe_stem}.mp3")
         print(file_path)
         return file_path
 
@@ -65,6 +98,31 @@ def transcribe_audio(file_path):
 
     print(f"Транскрибация сохранена в: {transcript_path}")
     return transcript_path
+
+
+@lru_cache(maxsize=None)
+def ensure_model_available(model_name: str):
+    try:
+        available = list_models().get("models", [])
+    except Exception as exc:
+        logger.warning("Не удалось получить список моделей Ollama: %s", exc)
+        available = []
+
+    for meta in available:
+        if model_name in (meta.get("model"), meta.get("name")):
+            return
+
+    logger.info("Модель %s не найдена на Ollama, запускаю загрузку", model_name)
+    try:
+        pull_response = pull_model(model=model_name)
+        if isinstance(pull_response, dict):
+            return
+        if hasattr(pull_response, "__iter__"):
+            for _ in pull_response:
+                continue
+    except Exception as exc:  
+        logger.error("Ошибка загрузки модели %s: %s", model_name, exc)
+        raise
 
 
 def split_text(text, max_tokens=2000):
@@ -91,18 +149,42 @@ def create_summary(transcript_path):
     with open(transcript_path, "r", encoding="utf-8") as f:
         text = f.read()
 
+    primary_model = OLLAMA_MODEL
+    fallback_model = FALLBACK_MODEL
+    ensure_model_available(primary_model)
     chunks = split_text(text, max_tokens=2000)
     summaries = []
 
     for i, chunk in enumerate(chunks, 1):
         print(f"Создаю конспект для чанка {i}/{len(chunks)}...")
-        response = chat(
-            model="gemma3",
-            messages=[
-                {"role": "system", "content": prompt_gemma},
-                {"role": "user", "content": chunk}
-            ]
-        )
+        try:
+            response = chat(
+                model=primary_model,
+                messages=[
+                    {"role": "system", "content": prompt_gemma},
+                    {"role": "user", "content": chunk}
+                ]
+            )
+        except Exception as exc:
+            msg = str(exc)
+            is_killed_runner = "llama runner process has terminated: signal: killed" in msg
+            if (not is_killed_runner) or primary_model == fallback_model:
+                raise
+
+            logger.warning(
+                "Модель %s упала из-за нехватки памяти, переключаюсь на %s",
+                primary_model,
+                fallback_model,
+            )
+            ensure_model_available(fallback_model)
+            primary_model = fallback_model
+            response = chat(
+                model=primary_model,
+                messages=[
+                    {"role": "system", "content": prompt_gemma},
+                    {"role": "user", "content": chunk}
+                ]
+            )
         summaries.append(response["message"]["content"])
 
     summary_text = "\n\n".join(summaries)
@@ -117,9 +199,24 @@ def create_summary(transcript_path):
 
 
 def process_video(url):
+    job = get_current_job()
+
+    def set_stage(stage: str):
+        if not job:
+            return
+        job.meta["stage"] = stage
+        job.save_meta()
+
+    set_stage("extract_audio")
     mp3_file = download_mp3(url)
+
+    set_stage("transcribe")
     transcript_file = transcribe_audio(mp3_file)
+
+    set_stage("summarize")
     summary_file = create_summary(transcript_file)
+
+    set_stage("done")
     return summary_file
 # if __name__ == "__main__":
 #     video_url = input("Сслыка: ").strip()

@@ -1,5 +1,7 @@
 venv/
 .env
+DS_Store
+dump
 
 downloads/
 
