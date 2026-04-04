@@ -35,6 +35,7 @@ function App() {
     const [taskStatus, setTaskStatus] = useState(null);
     const [error, setError] = useState(null);
     const [downloadReady, setDownloadReady] = useState(false);
+    const [size, setSize] = useState('medium'); // short, medium, detailed
 
     useEffect(() => {
         if (!taskId || downloadReady || taskStatus === "failed") {
@@ -137,6 +138,25 @@ function App() {
         }
     };
 
+    const handleStatus = () => {
+        switch(taskStatus){
+            case null:
+                return "Ожидание ссылки...";
+            case("queued"):
+                return "В очереди...";
+            case("failed"):
+                return "Ошибка!";
+            case("done"):
+                return "Готово!";
+            default:
+                console.log(`Неизвестное состояние: ${taskStatus}`);
+                return "Неизвестное состояние...";
+        }
+    };
+
+    const handleSize = (size) => {
+        setSize(size);
+    };
     return (
         <div className="screen">
             <div className="card">
@@ -147,10 +167,16 @@ function App() {
                 <input
                     type="text"
                     placeholder="Ссылка на лекцию"
-                    value={videoURL}
+                    value={videoURL}    
                     onChange={(e) => setVideoURL(e.target.value)}
                     disabled={loading}
                 />
+
+                <div className="size-buttons">
+                    <button className="size-button" onClick={() => handleSize('short')} style={{backgroundColor: size === 'short' ? '#1c4269' : '#5b7fa6'}}>Краткий</button>
+                    <button className="size-button" onClick={() => handleSize('medium')} style={{backgroundColor: size === 'medium' ? '#1c4269' : '#5b7fa6'}}>Сжатый</button>
+                    <button className="size-button" onClick={() => handleSize('detailed')} style={{backgroundColor: size === 'detailed' ? '#1c4269' : '#5b7fa6'}} >Крупный</button>
+                </div>
 
                 <button
                     className="create-button"
@@ -169,8 +195,8 @@ function App() {
                 {isCreated && (
                     <div className="result">
                         <div>
-                            <p className="success">Конспект успешно создан!</p>
-                            <p className="title">Статус: {taskStatus || "queued"}</p>
+                            <p className="success">{isCreated ? "Конспект успешно создан!" : "В процессе обработки..."}</p>
+                            <p className="title">Статус: {handleStatus()}</p>
                             {taskId && (
                                 <p className="task-id" style={{ fontSize: "12px", color: "#666" }}>
                                     Task ID: {taskId}
@@ -178,9 +204,7 @@ function App() {
                             )}
                         </div>
 
-                        <button className="download-button" onClick={handleDownload} disabled={!taskId || loading}>
-                            {downloadReady ? "Скачать файл" : "Проверить и скачать"}
-                        </button>
+                        {downloadReady ? (<button className="download-button" onClick={handleDownload} disabled={!taskId || loading}>Скачать файл</button>) : ""}
                     </div>
                 )}
             </div>
