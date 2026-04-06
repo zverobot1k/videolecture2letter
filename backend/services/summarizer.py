@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 OLLAMA_MODEL = os.getenv("OLLAMA_SUMMARY_MODEL", "gemma3")
 FALLBACK_MODEL = os.getenv("OLLAMA_FALLBACK_MODEL", "gemma3:1b")
 
-prompt_gemma = """Сделай подробный конспект видео.
+DEFAULT_PROMPT = """Сделай подробный конспект видео.
 
 Требования:
 - Конспект должен быть максимально подробным и раскрывать тему полно.
@@ -145,7 +145,7 @@ def split_text(text, max_tokens=2000):
     return chunks
 
 
-def create_summary(transcript_path):
+def create_summary(transcript_path, prompt):
     with open(transcript_path, "r", encoding="utf-8") as f:
         text = f.read()
 
@@ -161,7 +161,7 @@ def create_summary(transcript_path):
             response = chat(
                 model=primary_model,
                 messages=[
-                    {"role": "system", "content": prompt_gemma},
+                    {"role": "system", "content": prompt or DEFAULT_PROMPT},
                     {"role": "user", "content": chunk}
                 ]
             )
@@ -181,7 +181,7 @@ def create_summary(transcript_path):
             response = chat(
                 model=primary_model,
                 messages=[
-                    {"role": "system", "content": prompt_gemma},
+                    {"role": "system", "content": prompt or DEFAULT_PROMPT},
                     {"role": "user", "content": chunk}
                 ]
             )
@@ -198,7 +198,7 @@ def create_summary(transcript_path):
 
 
 
-def process_video(url):
+def process_video(url, prompt):
     job = get_current_job()
 
     def set_stage(stage: str):
@@ -214,7 +214,7 @@ def process_video(url):
     transcript_file = transcribe_audio(mp3_file)
 
     set_stage("summarize")
-    summary_file = create_summary(transcript_file)
+    summary_file = create_summary(transcript_file, prompt)
 
     set_stage("done")
     return summary_file

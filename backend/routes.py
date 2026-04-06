@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=TaskResponse)
 async def process_video_route(data: YoutubeRequest):
-    job_id = enqueue_video(data.url)
+    job_id = enqueue_video(data.url, data.prompt)
     logger.info("Created task id=%s", job_id)
     return {"task_id": job_id, "status": "queued"}
 

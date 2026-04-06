@@ -7,8 +7,8 @@ from backend.services.summarizer import process_video
 q = Queue(connection=redis_conn)
 logger = logging.getLogger(__name__)
 
-def enqueue_video(url: str):
-    job = q.enqueue(process_video, url, job_timeout=3600)
+def enqueue_video(url: str, prompt: str):
+    job = q.enqueue(process_video, url, prompt, job_timeout=3600)
     logger.info("Enqueued job id=%s queue=%s url=%s", job.id, q.name, url)
     return job.id
 

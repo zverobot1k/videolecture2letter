@@ -4,6 +4,12 @@ import { api } from "../api/api_client.js";
 
 const PROCESS_API_BASE = "http://localhost:8000/process";
 const TASK_STORAGE_KEY = "softwarepr_active_task";
+const ACTIVE_TASK_TTL_MS = 10 * 60 * 1000;
+const SUMMARY_PROMPTS = {
+    short: "Сделай очень краткий конспект видео на русском языке. Формат: 4-6 коротких пунктов с самыми важными идеями и выводами. Без вводных фраз. Только чистый текст, без Markdown-разметки (без MD).",
+    medium: "Сделай сжатый структурированный конспект видео на русском языке. Формат: название, основная идея, 5-8 разделов с ключевыми тезисами и важными деталями. Только чистый текст, без Markdown-разметки (без MD) и без лишних комментариев.",
+    detailed: "Сделай подробный конспект видео на русском языке. Формат: название, основная идея, нумерованные разделы с детальным раскрытием темы, ключевыми аргументами и примерами. Убери повторы, пиши только по содержанию. Только чистый текст, без Markdown-разметки (без MD).",
+};
 
 function extractFileName(contentDispositionHeader) {
     if (!contentDispositionHeader) {
@@ -109,6 +115,11 @@ function loadSavedTask() {
             return null;
         }
 
+        if (!parsed.savedAt || Date.now() - parsed.savedAt > ACTIVE_TASK_TTL_MS) {
+            localStorage.removeItem(TASK_STORAGE_KEY);
+            return null;
+        }
+
         return parsed;
     } catch {
         return null;
@@ -130,17 +141,48 @@ function App() {
     const hasActiveTask = Boolean(taskId) && !isTerminalStatus(taskStatus);
 
     useEffect(() => {
-        const saved = loadSavedTask();
-        if (!saved) {
-            return;
-        }
+        let cancelled = false;
 
-        setTaskId(saved.taskId);
-        setTaskStatus(saved.taskStatus || "queued");
-        setTaskStage(saved.taskStage || "queued");
-        setStatusMessage(saved.statusMessage || getStatusLabel(saved.taskStatus || "queued"));
-        setDownloadReady(Boolean(saved.downloadReady));
-        setIsCreated(true);
+        const restoreTask = async () => {
+            const saved = loadSavedTask();
+            if (!saved || isTerminalStatus(saved.taskStatus)) {
+                localStorage.removeItem(TASK_STORAGE_KEY);
+                return;
+            }
+
+            try {
+                const state = await fetchTaskState(saved.taskId);
+                if (cancelled) {
+                    return;
+                }
+
+                if (state.kind !== "json") {
+                    localStorage.removeItem(TASK_STORAGE_KEY);
+                    return;
+                }
+
+                const nextStatus = state.data.status || "unknown";
+                if (isTerminalStatus(nextStatus)) {
+                    localStorage.removeItem(TASK_STORAGE_KEY);
+                    return;
+                }
+
+                setTaskId(saved.taskId);
+                setTaskStatus(nextStatus);
+                setTaskStage(state.data.stage || "queued");
+                setStatusMessage(getStatusLabel(nextStatus));
+                setDownloadReady(false);
+                setIsCreated(true);
+            } catch {
+                localStorage.removeItem(TASK_STORAGE_KEY);
+            }
+        };
+
+        restoreTask();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {
@@ -155,6 +197,7 @@ function App() {
             taskStage,
             statusMessage,
             downloadReady,
+            savedAt: Date.now(),
         };
         localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(payload));
     }, [taskId, taskStatus, taskStage, statusMessage, downloadReady]);
@@ -236,7 +279,7 @@ function App() {
         setIsCreated(false);
 
         try {
-            const data = await api.handleVideo(videoURL);
+            const data = await api.handleVideo(videoURL, SUMMARY_PROMPTS[size]);
             setTaskId(data.task_id);
             setTaskStatus(data.status || "queued");
             setTaskStage(data.stage || "queued");
@@ -326,7 +369,7 @@ function App() {
                 <div className="size-buttons">
                     <button className="size-button" onClick={() => handleSize('short')} style={{backgroundColor: size === 'short' ? '#1c4269' : '#5b7fa6'}}>Краткий</button>
                     <button className="size-button" onClick={() => handleSize('medium')} style={{backgroundColor: size === 'medium' ? '#1c4269' : '#5b7fa6'}}>Сжатый</button>
-                    <button className="size-button" onClick={() => handleSize('detailed')} style={{backgroundColor: size === 'detailed' ? '#1c4269' : '#5b7fa6'}} >Крупный</button>
+                    <button className="size-button" onClick={() => handleSize('detailed')} style={{backgroundColor: size === 'detailed' ? '#1c4269' : '#5b7fa6'}} >Подробный</button>
                 </div>
 
                 <button

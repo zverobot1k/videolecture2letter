@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
 class YoutubeRequest(BaseModel):
-    url: str  
+    url: str
+    prompt: str
 
 class TaskResponse(BaseModel):
     task_id: str

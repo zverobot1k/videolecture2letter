@@ -9,8 +9,8 @@ const apiClient = axios.create({
 });
 
 export const api = {
-    handleVideo: async (url) => {
-        let res = await apiClient.post('/', { url: url});
+    handleVideo: async (url, prompt) => {
+        let res = await apiClient.post('/', { url: url, prompt: prompt });
         return res.data;
     },
     getTaskStatus: async (task_id) => {
