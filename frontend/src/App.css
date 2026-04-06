@@ -170,6 +170,37 @@ input:focus {
   background: #4a6c8f;
 }
 
+.actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.action-button {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 27px;
+  padding-right: 27px;
+  border: none;
+  border-radius: 12px;
+  background: #5b7fa6;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.login-button {
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #5b7fa6;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+
 @media (max-width: 600px) {
   .card {
     width: 92vw;

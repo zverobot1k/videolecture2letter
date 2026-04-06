@@ -137,6 +137,7 @@ function App() {
     const [size, setSize] = useState('medium'); // short, medium, detailed
     const [statusMessage, setStatusMessage] = useState("Ожидание запуска");
     const [taskStage, setTaskStage] = useState("queued");
+    const [user, setUser] = useState(null);
 
     const hasActiveTask = Boolean(taskId) && !isTerminalStatus(taskStatus);
 

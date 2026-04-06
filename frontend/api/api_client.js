@@ -16,5 +16,18 @@ export const api = {
     getTaskStatus: async (task_id) => {
         let res = await apiClient.get(`/${task_id}`);
         return res.data;
+    },
+    //user_data: { "email": "lalala@mail.ru", "password":"parol123" }
+    //response(примерный): { status(201)/status(409)/status(401) }
+    Registration: async (user_data) => {
+        let res = await apiClient.post('/auth/registration', user_data);
+        return res.status;
+    },
+    //Headers: "Bearer": "access_token"
+    //user_data: { "email": "lalala@mail.ru", "password":"parol123" }
+    //response(примерный): { status(200)/status(404)/status(401), access_token, refresh_token }
+    Login: async (user_data) => {
+        let res = await apiClient.post('/auth/login', user_data);
+        return {status: res.status, data: res.data };
     }
 }
