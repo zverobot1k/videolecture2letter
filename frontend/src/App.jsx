@@ -126,7 +126,7 @@ function loadSavedTask() {
     }
 }
 
-function App() {
+function App({ router, /*user*/ }) { //<-------------------------------- usera sdelat and uncomment
     const [videoURL, setVideoURL] = useState("");
     const [isCreated, setIsCreated] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -353,8 +353,7 @@ function App() {
         setSize(size);
     };
     return (
-        <div className="screen">
-            <div className="card">
+        <div className="card">
                 <h1>Создание конспекта</h1>
 
                 <h3 className="subtitle">Вставьте ссылку</h3>
@@ -376,8 +375,7 @@ function App() {
                 <button
                     className="create-button"
                     onClick={() => handleCreateSummary()}
-                    disabled={loading || hasActiveTask}
-                >
+                    disabled={loading || hasActiveTask}>
                     {loading ? "Обработка видео..." : hasActiveTask ? "Ожидаем завершения текущей задачи" : "Сделать конспект"}
                 </button>
 
@@ -421,7 +419,6 @@ function App() {
                     </div>
                 )}
             </div>
-        </div>
     );
 }
 

@@ -18,7 +18,7 @@ export const api = {
         return res.data;
     },
     //user_data: { "email": "lalala@mail.ru", "password":"parol123" }
-    //response(примерный): { status(201)/status(409)/status(401) }
+    //response(примерный): { status(201)/status(409)/status(401), access_token, refresh_token }
     Registration: async (user_data) => {
         let res = await apiClient.post('/auth/registration', user_data);
         return res.status;
@@ -29,5 +29,5 @@ export const api = {
     Login: async (user_data) => {
         let res = await apiClient.post('/auth/login', user_data);
         return {status: res.status, data: res.data };
-    }
+    },
 }

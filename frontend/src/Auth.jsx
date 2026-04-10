@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { api } from "../api/api_client.js";
 import './App.css';
-export default function Auth({ handleState }) {
-    const [isReg, setIsReg] = useState(false);
+export default function Auth({ router }) {
+    const [isReg, setIsReg] = useState(false); // <----- вроде это не нужно? можно заменить все реализации на action
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [reaction, setReaction] = useState("");
@@ -19,12 +19,15 @@ export default function Auth({ handleState }) {
     const handleAuth = async () => {
         try {
             if (isReg) {
-                let status = await api.Registration({ "email": email, "password": password });
-                switch (status.toString()) {
+                let result = await api.Registration({ "email": email, "password": password });
+                switch (result.status.toString()) {
                     case "200":
-                        console.log(`[REG]Пользователь успешно зарегистрирован! Email: ${email}`);
+                        console.log(`[REG]Пользователь ${result.data.email} успешно зарегистрирован!`);
                         setReaction("Вы успешно зарегистрированы!");
                         setIsReg(false);
+
+                        router('main', {user: result.data});
+
                         break;
                     case "401":
                         console.log(`[REG]Не указаны обязательные поля!`);
@@ -46,8 +49,9 @@ export default function Auth({ handleState }) {
 
                 switch (status) {
                     case "200":
-                        console.log(`[LOG]Пользователь успешно авторизован!`);
+                        console.log(`[LOG]Пользователь ${data.email} успешно авторизован!`);
                         handleState(true);
+                        router("main", {user: data});
                         break;
                     case "404":
                         console.log("[LOG]Пользователь с такой почтой не найден или неправильный пароль!");

@@ -8,9 +8,17 @@
 .screen {
   height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   background: #c6d8e6;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .card {
@@ -63,13 +71,13 @@ input:focus {
   background: #4a6c8f;
 }
 
-.size-buttons{
+.size-buttons {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
 }
 
-.size-button{
+.size-button {
   padding-top: 10px;
   padding-bottom: 10px;
   padding-left: 27px;
@@ -189,6 +197,35 @@ input:focus {
   cursor: pointer;
 }
 
+.pages {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  background-color: white;
+  padding: 2px;
+}
+
+.page-button {
+  margin: 5px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 27px;
+  padding-right: 27px;
+  border: none;
+  border-radius: 12px;
+  background: #5b7fa6;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.balance-bar {
+  margin: 0 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .login-button {
   padding: 14px;
   border: none;
@@ -200,6 +237,41 @@ input:focus {
   transition: 0.2s;
 }
 
+.profile-card {
+  width: 450px;
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+
+  background-color: white;
+  border-radius: 20px;
+  border: 1px solid black;
+}
+
+.konspekt-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+}
+
+.konspekt {
+  background-color: #9ecfff;
+
+}
+
+.btn--replenish {
+  background-color: #5b7fa6;
+  border-radius: 12px;
+  padding: 5px;
+}
+
+.btn--danger {
+  background-color: red;
+  border-radius: 12px;
+  padding: 5px;
+}
 
 @media (max-width: 600px) {
   .card {
