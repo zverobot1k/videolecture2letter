@@ -42,11 +42,17 @@ services:
       dockerfile: Dockerfile
     container_name: softwarepr-backend
     environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/softwareprdb
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      ADMIN_USER_ID: ${ADMIN_USER_ID:-2}
+      DEFAULT_TOKEN_BALANCE: ${DEFAULT_TOKEN_BALANCE:-100}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_SUMMARY_MODEL: ${OLLAMA_SUMMARY_MODEL:-gemma3:1b}
     depends_on:
+      postgres:
+        condition: service_started
       redis:
         condition: service_healthy
       ollama:
@@ -54,8 +60,15 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      - ./backend:/app/backend
+      - ./database:/app/database
       - ./downloads:/app/downloads
-    command: ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    command:
+      [
+        "sh",
+        "-c",
+        "pip install --no-cache-dir sqlalchemy==2.0.44 psycopg2-binary==2.9.11 'python-jose[cryptography]==3.5.0' passlib==1.7.4 && python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000",
+      ]
 
   worker:
     build:
@@ -63,19 +76,50 @@ services:
       dockerfile: Dockerfile
     container_name: softwarepr-worker
     environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/softwareprdb
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      ADMIN_USER_ID: ${ADMIN_USER_ID:-2}
+      DEFAULT_TOKEN_BALANCE: ${DEFAULT_TOKEN_BALANCE:-100}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_SUMMARY_MODEL: ${OLLAMA_SUMMARY_MODEL:-gemma3:1b}
     depends_on:
+      postgres:
+        condition: service_started
       redis:
         condition: service_healthy
       ollama:
         condition: service_healthy
     volumes:
+      - ./backend:/app/backend
+      - ./database:/app/database
       - ./downloads:/app/downloads
-    command: ["python", "-m", "backend.worker"]
+    command:
+      [
+        "sh",
+        "-c",
+        "pip install --no-cache-dir sqlalchemy==2.0.44 psycopg2-binary==2.9.11 'python-jose[cryptography]==3.5.0' passlib==1.7.4 && python -m backend.worker",
+      ]
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: softwarepr-postgres
+    environment:
+      POSTGRES_DB: softwareprdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d softwareprdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
 volumes:
+  postgres_data:
   ollama_data:
   frontend_node_modules:

@@ -6,31 +6,41 @@
 }
 
 .screen {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  gap: 16px;
+  padding: 16px;
   background: #c6d8e6;
+  overflow-y: auto;
+}
+
+.screen--auth {
+  justify-content: center;
 }
 
 .main {
+  width: 100%;
   flex: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .card {
-  width: 450px;
+  width: min(450px, 92vw);
   background: #ffffff;
   padding: 40px;
   border-radius: 20px;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
-
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.auth-card {
+  max-width: 92vw;
 }
 
 h1 {
@@ -42,6 +52,11 @@ h1 {
 .subtitle {
   font-size: 14px;
   color: #5a6f82;
+}
+
+.error-text {
+  color: #a74040;
+  font-size: 14px;
 }
 
 input {
@@ -56,39 +71,65 @@ input:focus {
   border-color: #4f7cac;
 }
 
-.create-button {
-  padding: 14px;
+.create-button,
+.login-button,
+.download-button,
+.action-button,
+.size-button,
+.page-button,
+.btn--success,
+.btn--replenish,
+.btn--danger {
   border: none;
   border-radius: 12px;
-  background: #5b7fa6;
   color: white;
-  font-size: 15px;
   cursor: pointer;
   transition: 0.2s;
 }
 
-.create-button:hover {
-  background: #4a6c8f;
+.create-button,
+.login-button {
+  padding: 14px;
+  background: #5b7fa6;
+  font-size: 15px;
+}
+
+.create-button:hover,
+.login-button:hover,
+.download-button:hover,
+.action-button:hover,
+.size-button:hover,
+.page-button:hover,
+.btn--success:hover,
+.btn--replenish:hover,
+.btn--danger:hover {
+  filter: brightness(0.95);
+}
+
+.size-buttons,
+.actions,
+.balance-bar,
+.admin-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .size-buttons {
-  display: flex;
-  flex-direction: row;
   justify-content: space-between;
 }
 
-.size-button {
-  padding-top: 10px;
-  padding-bottom: 10px;
-  padding-left: 27px;
-  padding-right: 27px;
-  border: none;
-  border-radius: 12px;
+.actions {
+  justify-content: space-around;
+}
+
+.size-button,
+.action-button,
+.page-button,
+.btn--replenish,
+.btn--danger {
+  padding: 10px 16px;
   background: #5b7fa6;
-  color: white;
   font-size: 15px;
-  cursor: pointer;
-  transition: 0.2s;
 }
 
 .result {
@@ -96,7 +137,6 @@ input:focus {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-
   background: #eef3f7;
   padding: 20px;
   border-radius: 15px;
@@ -106,6 +146,7 @@ input:focus {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .todo-list {
@@ -165,121 +206,147 @@ input:focus {
 
 .download-button {
   padding: 10px 16px;
-  border: none;
-  border-radius: 10px;
   background: #5b7fa6;
-  color: white;
   font-size: 13px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.download-button:hover {
-  background: #4a6c8f;
-}
-
-.actions {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-}
-
-.action-button {
-  padding-top: 10px;
-  padding-bottom: 10px;
-  padding-left: 27px;
-  padding-right: 27px;
-  border: none;
-  border-radius: 12px;
-  background: #5b7fa6;
-  color: white;
-  font-size: 15px;
-  cursor: pointer;
 }
 
 .pages {
-  display: flex;
-  flex-direction: row;
   width: 100%;
-  background-color: white;
-  padding: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  padding: 8px;
+  border-radius: 16px;
 }
 
 .page-button {
-  margin: 5px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  padding-left: 27px;
-  padding-right: 27px;
-  border: none;
-  border-radius: 12px;
   background: #5b7fa6;
-  color: white;
-  font-size: 15px;
-  cursor: pointer;
+}
+
+.page-button--primary {
+  background: #c44c4c;
+}
+
+.page-button--secondary {
+  width: fit-content;
+}
+
+.profile-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .balance-bar {
-  margin: 0 0 0 auto;
-  display: flex;
+  margin-left: auto;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
-.login-button {
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: #5b7fa6;
-  color: white;
+.balance {
   font-size: 15px;
-  cursor: pointer;
-  transition: 0.2s;
+  color: #2f4f6f;
 }
 
 .profile-card {
-  width: 450px;
+  width: min(760px, 92vw);
   min-height: 450px;
   display: flex;
   flex-direction: column;
+  gap: 16px;
   padding: 40px;
-
   background-color: white;
   border-radius: 20px;
   border: 1px solid black;
 }
 
+.konspektsList,
 .konspekt-list {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-
+  gap: 12px;
 }
 
 .konspekt {
-  background-color: #9ecfff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #eef6ff;
+  border-radius: 14px;
+}
 
+.konspekt__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.konspekt__title {
+  font-size: 16px;
+  color: #2f4f6f;
+}
+
+.konspekt__subline,
+.konspekt__path {
+  font-size: 13px;
+  color: #5a6f82;
+  word-break: break-word;
+}
+
+.btn--success {
+  background: #356a46;
+  padding: 8px 12px;
 }
 
 .btn--replenish {
-  background-color: #5b7fa6;
-  border-radius: 12px;
-  padding: 5px;
+  background: #5b7fa6;
 }
 
 .btn--danger {
-  background-color: red;
+  background: #c44c4c;
+}
+
+.admin-panel {
+  gap: 14px;
+}
+
+.admin-actions {
+  flex-direction: column;
+}
+
+.admin-result,
+.global-message {
+  padding: 12px;
   border-radius: 12px;
-  padding: 5px;
+  background: #eef3f7;
+  color: #2f4f6f;
+}
+
+.empty {
+  color: #5a6f82;
+  padding: 8px 0;
 }
 
 @media (max-width: 600px) {
-  .card {
+  .screen {
+    padding: 12px;
+  }
+
+  .card,
+  .profile-card {
     width: 92vw;
     padding: 24px;
   }
 
-  .result {
+  .result,
+  .konspekt {
     flex-direction: column;
     align-items: flex-start;
   }

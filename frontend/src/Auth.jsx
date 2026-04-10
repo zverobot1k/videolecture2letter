@@ -1,90 +1,69 @@
-import { useState } from "react";
-import { api } from "../api/api_client.js";
+import { useState } from 'react';
+import { api } from '../api/api_client.js';
 import './App.css';
+
 export default function Auth({ router }) {
-    const [isReg, setIsReg] = useState(false); // <----- вроде это не нужно? можно заменить все реализации на action
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [reaction, setReaction] = useState("");
-    const [action, setAction] = useState("reg"); // reg || auth
+    const [mode, setMode] = useState('login');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [reaction, setReaction] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleChangeAction = () => {
-        if (action === "reg") {
-            setAction("auth");
-        } else {
-            setAction("reg");
-        }
-    };
+    const isRegister = mode === 'register';
 
-    const handleAuth = async () => {
+    const handleSubmit = async () => {
+        setLoading(true);
+        setReaction('');
+
         try {
-            if (isReg) {
-                let result = await api.Registration({ "email": email, "password": password });
-                switch (result.status.toString()) {
-                    case "200":
-                        console.log(`[REG]Пользователь ${result.data.email} успешно зарегистрирован!`);
-                        setReaction("Вы успешно зарегистрированы!");
-                        setIsReg(false);
+            const response = isRegister
+                ? await api.register({ email, password })
+                : await api.login({ email, password });
 
-                        router('main', {user: result.data});
-
-                        break;
-                    case "401":
-                        console.log(`[REG]Не указаны обязательные поля!`);
-                        setReaction("Не указаны обязательные поля!");
-                        break;
-                    case "409":
-                        console.log(`[REG]Пользователь с таким именем уже существует!`);
-                        setReaction("Пользователь с таким именем уже существует!");
-                        break;
-                    default:
-                        console.log(`[REG]Неизвестный статус-код при регистрации: ${status}`);
-                        setReaction("Неизвестная реакция...");
-                        break;
-                }
-            } else {
-                let response = await api.Login({ "email": email, "password": password });
-                let status = response.status;
-                let data = response.data;
-
-                switch (status) {
-                    case "200":
-                        console.log(`[LOG]Пользователь ${data.email} успешно авторизован!`);
-                        handleState(true);
-                        router("main", {user: data});
-                        break;
-                    case "404":
-                        console.log("[LOG]Пользователь с такой почтой не найден или неправильный пароль!");
-                        setReaction("Пользователь с такой почтой не найден или неправильный пароль!");
-                        break;
-                    case "401":
-                        console.log(`[LOG]Не указаны обязательные поля!`);
-                        setReaction("Не указаны обязательные поля!");
-                        break;
-                }
-            }
-        } catch (err) {
-            console.log(err);
+            api.setSession({
+                accessToken: response.data.access_token,
+                refreshToken: response.data.refresh_token,
+                user: response.data.user,
+            });
+            localStorage.removeItem('softwarepr_active_task');
+            router('main', { user: response.data.user });
+        } catch (error) {
+            const message = error.response?.data?.detail || error.message || 'Не удалось выполнить запрос';
+            setReaction(message);
         } finally {
-            setEmail("");
-            setPassword("");
+            setLoading(false);
         }
     };
 
     return (
-        <div className="screen">
-            <div className="card">
+        <div className="screen screen--auth">
+            <div className="card auth-card">
                 <div className="actions">
-                    <button className="action-button" onClick={handleChangeAction} disabled={action === "reg" ? true : false}
-                        style={{ backgroundColor: action === "reg" ? '#1c4269' : '#5b7fa6' }}>Регистрация</button>
-                    <button className="action-button" onClick={handleChangeAction} disabled={action === "auth" ? true : false}
-                        style={{ backgroundColor: action === "auth" ? '#1c4269' : '#5b7fa6' }}>Авторизация</button>
+                    <button
+                        className="action-button"
+                        onClick={() => setMode('register')}
+                        disabled={isRegister}
+                        style={{ backgroundColor: isRegister ? '#1c4269' : '#5b7fa6' }}
+                    >
+                        Регистрация
+                    </button>
+                    <button
+                        className="action-button"
+                        onClick={() => setMode('login')}
+                        disabled={!isRegister}
+                        style={{ backgroundColor: !isRegister ? '#1c4269' : '#5b7fa6' }}
+                    >
+                        Авторизация
+                    </button>
                 </div>
-                <h3 className="subtitle">{isReg ? "Регистрация" : "Авторизация"}</h3>
-                <input className="input" placeholder="Почта" onChange={(e) => setEmail(e.target.value)} />
-                <input className="input" placeholder="Пароль" onChange={(e) => setPassword(e.target.value)} />
-                {reaction && (<label className="">reaction</label>)}
-                <button className="login-button" onClick={handleAuth}>{isReg ? "Зарегистрироваться" : "Войти"}</button>
+
+                <h3 className="subtitle">{isRegister ? 'Регистрация' : 'Авторизация'}</h3>
+                <input className="input" type="email" placeholder="Почта" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input className="input" type="password" placeholder="Пароль" value={password} onChange={(e) => setPassword(e.target.value)} />
+                {reaction && <div className="error-text">{reaction}</div>}
+                <button className="login-button" onClick={handleSubmit} disabled={loading}>
+                    {loading ? 'Проверяем...' : isRegister ? 'Зарегистрироваться' : 'Войти'}
+                </button>
             </div>
         </div>
     );

@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from functools import lru_cache
+from pathlib import Path
 
 import whisper
 import yt_dlp
@@ -9,11 +10,15 @@ import torch
 from rq import get_current_job
 from ollama import chat, list as list_models, pull as pull_model
 
+from database.database import SessionLocal
+from database.models import Summary, SummaryStatus, User
+
 torch.set_num_threads(1)
 logger = logging.getLogger(__name__)
 
 OLLAMA_MODEL = os.getenv("OLLAMA_SUMMARY_MODEL", "gemma3")
 FALLBACK_MODEL = os.getenv("OLLAMA_FALLBACK_MODEL", "gemma3:1b")
+MAX_VIDEO_DURATION_SECONDS = 2 * 60 * 60
 
 DEFAULT_PROMPT = """Сделай подробный конспект видео.
 
@@ -51,17 +56,37 @@ def build_safe_stem(title: str, video_id: str | None) -> str:
     return sanitized
 
 
-#Получение mp3
-def download_mp3(url, output_folder="downloads"):
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+class VideoTooLongError(Exception):
+    pass
 
+
+def fetch_video_metadata(url: str) -> dict:
     info_opts = {
         'quiet': True,
         'skip_download': True,
     }
     with yt_dlp.YoutubeDL(info_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=False)
+        return ydl.extract_info(url, download=False)
+
+
+def validate_video_duration_or_raise(info_dict: dict) -> None:
+    if info_dict.get('is_live') or info_dict.get('was_live'):
+        raise VideoTooLongError("Нельзя обработать live-трансляцию")
+
+    duration = info_dict.get('duration')
+    if not isinstance(duration, (int, float)):
+        raise VideoTooLongError("Не удалось определить длительность видео")
+
+    if isinstance(duration, (int, float)) and duration > MAX_VIDEO_DURATION_SECONDS:
+        raise VideoTooLongError("Слишком длинный видеоролик: длительность больше 2 часов")
+
+
+#Получение mp3
+def download_mp3(url, output_folder="downloads"):
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    info_dict = fetch_video_metadata(url)
 
     title = info_dict.get('title', 'audio')
     video_id = info_dict.get('id')
@@ -193,12 +218,44 @@ def create_summary(transcript_path, prompt):
         f.write(summary_text)
 
     print(f"Конспект сохранён в: {summary_path}")
-    return summary_path
+    return str(Path(summary_path).resolve())
 
 
 
 
-def process_video(url, prompt):
+def update_summary_record(summary_id: int, **fields):
+    db = SessionLocal()
+    try:
+        summary = db.get(Summary, summary_id)
+        if not summary:
+            return
+        for field_name, field_value in fields.items():
+            setattr(summary, field_name, field_value)
+        db.commit()
+    finally:
+        db.close()
+
+
+def refund_summary_tokens(summary_id: int) -> int | None:
+    db = SessionLocal()
+    try:
+        summary = db.get(Summary, summary_id)
+        if not summary:
+            return None
+
+        user = db.get(User, summary.user_id)
+        if not user:
+            return None
+
+        user.balance_tokens += summary.token_cost
+        db.commit()
+        db.refresh(user)
+        return user.balance_tokens
+    finally:
+        db.close()
+
+
+def process_video(url, prompt, user_id, summary_id, size, token_cost):
     job = get_current_job()
 
     def set_stage(stage: str):
@@ -206,18 +263,39 @@ def process_video(url, prompt):
             return
         job.meta["stage"] = stage
         job.save_meta()
+        update_summary_record(summary_id, status=SummaryStatus.processing)
 
-    set_stage("extract_audio")
-    mp3_file = download_mp3(url)
+    try:
+        update_summary_record(summary_id, status=SummaryStatus.processing, error=None)
 
-    set_stage("transcribe")
-    transcript_file = transcribe_audio(mp3_file)
+        set_stage("validate")
+        metadata = fetch_video_metadata(url)
+        validate_video_duration_or_raise(metadata)
 
-    set_stage("summarize")
-    summary_file = create_summary(transcript_file, prompt)
+        set_stage("extract_audio")
+        mp3_file = download_mp3(url)
 
-    set_stage("done")
-    return summary_file
+        set_stage("transcribe")
+        transcript_file = transcribe_audio(mp3_file)
+
+        set_stage("summarize")
+        summary_file = create_summary(transcript_file, prompt)
+
+        set_stage("done")
+        update_summary_record(
+            summary_id,
+            status=SummaryStatus.done,
+            file_path=summary_file,
+            error=None,
+        )
+        return summary_file
+    except VideoTooLongError as exc:
+        refund_summary_tokens(summary_id)
+        update_summary_record(summary_id, status=SummaryStatus.failed, error=str(exc))
+        raise
+    except Exception as exc:
+        update_summary_record(summary_id, status=SummaryStatus.failed, error=str(exc))
+        raise
 # if __name__ == "__main__":
 #     video_url = input("Сслыка: ").strip()
 
