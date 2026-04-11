@@ -115,7 +115,9 @@ input:focus {
 }
 
 .size-buttons {
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
 }
 
 .actions {
@@ -130,6 +132,15 @@ input:focus {
   padding: 10px 16px;
   background: #5b7fa6;
   font-size: 15px;
+}
+
+.size-button {
+  width: 100%;
+  min-height: 48px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .result {
@@ -159,6 +170,7 @@ input:focus {
 .todo-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   font-size: 13px;
 }
@@ -293,6 +305,10 @@ input:focus {
   color: #2f4f6f;
 }
 
+.konspekt__title::first-letter {
+  text-transform: uppercase;
+}
+
 .konspekt__subline,
 .konspekt__path {
   font-size: 13px;
@@ -311,6 +327,23 @@ input:focus {
 
 .btn--danger {
   background: #c44c4c;
+}
+
+.btn:disabled {
+  opacity: 0.95;
+  cursor: default;
+}
+
+.konspekt__meta {
+  gap: 8px;
+}
+
+.konspekt__subline {
+  line-height: 1.35;
+}
+
+.konspekt__action {
+  min-width: 160px;
 }
 
 .admin-panel {
@@ -353,5 +386,9 @@ input:focus {
 
   .download-button {
     width: 100%;
+  }
+
+  .size-buttons {
+    grid-template-columns: 1fr;
   }
 }

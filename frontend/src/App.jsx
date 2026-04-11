@@ -11,6 +11,12 @@ const SUMMARY_PROMPTS = {
     detailed: 'Сделай подробный конспект видео на русском языке. Формат: название, основная идея, нумерованные разделы с детальным раскрытием темы, ключевыми аргументами и примерами. Убери повторы, пиши только по содержанию. Только чистый текст, без Markdown-разметки.',
 };
 
+const SUMMARY_SIZE_OPTIONS = [
+    { size: 'short', label: 'Краткий', tokenCost: 10 },
+    { size: 'medium', label: 'Сжатый', tokenCost: 50 },
+    { size: 'detailed', label: 'Подробный', tokenCost: 100 },
+];
+
 function extractFileName(contentDispositionHeader) {
     if (!contentDispositionHeader) {
         return 'summary.txt';
@@ -41,49 +47,56 @@ function getNextPollDelay() {
 }
 
 const TODO_STEPS = [
-    { key: 'extract_audio', title: 'Извлекаю аудио' },
-    { key: 'transcribe', title: 'Транскрибирую' },
-    { key: 'summarize', title: 'Создаю конспект' },
+    { key: 'queued', title: 'Постановка в очередь' },
+    { key: 'processing', title: 'Обработка и создание конспекта' },
+    { key: 'done', title: 'Готово к скачиванию' },
 ];
 
-function getActiveStage({ taskStatus, taskStage, downloadReady }) {
-    if (downloadReady || taskStatus === 'done') {
+function getTodoState(stepKey, status) {
+    const normalized = status || 'queued';
+
+    if (normalized === 'failed') {
+        if (stepKey === 'done') {
+            return 'error';
+        }
+        if (stepKey === 'processing') {
+            return 'error';
+        }
         return 'done';
     }
 
-    if (taskStatus === 'queued') {
-        return 'queued';
+    if (normalized === 'queued') {
+        return stepKey === 'queued' ? 'active' : 'pending';
     }
 
-    if (taskStatus === 'failed') {
-        return taskStage || 'failed';
-    }
-
-    return taskStage || 'extract_audio';
-}
-
-function getStepState(stepKey, activeStage, hasFailed) {
-    const order = ['extract_audio', 'transcribe', 'summarize'];
-    const stepIndex = order.indexOf(stepKey);
-    const activeIndex = order.indexOf(activeStage);
-
-    if (activeStage === 'queued') {
+    if (normalized === 'processing' || normalized === 'started') {
+        if (stepKey === 'queued') {
+            return 'done';
+        }
+        if (stepKey === 'processing') {
+            return 'active';
+        }
         return 'pending';
     }
 
-    if (activeStage === 'done') {
+    if (normalized === 'done' || normalized === 'finished') {
         return 'done';
-    }
-
-    if (stepIndex < activeIndex) {
-        return 'done';
-    }
-
-    if (stepIndex === activeIndex) {
-        return hasFailed ? 'error' : 'active';
     }
 
     return 'pending';
+}
+
+function getTodoStateLabel(state) {
+    if (state === 'done') {
+        return 'Готово';
+    }
+    if (state === 'active') {
+        return 'В процессе';
+    }
+    if (state === 'error') {
+        return 'Ошибка';
+    }
+    return 'Ожидание';
 }
 
 function isTerminalStatus(status) {
@@ -425,9 +438,16 @@ export default function App({ user, onUserUpdate }) {
             />
 
             <div className="size-buttons">
-                <button className="size-button" onClick={() => handleSize('short')} style={{ backgroundColor: size === 'short' ? '#1c4269' : '#5b7fa6' }}>Краткий</button>
-                <button className="size-button" onClick={() => handleSize('medium')} style={{ backgroundColor: size === 'medium' ? '#1c4269' : '#5b7fa6' }}>Сжатый</button>
-                <button className="size-button" onClick={() => handleSize('detailed')} style={{ backgroundColor: size === 'detailed' ? '#1c4269' : '#5b7fa6' }}>Подробный</button>
+                {SUMMARY_SIZE_OPTIONS.map((option) => (
+                    <button
+                        key={option.size}
+                        className="size-button"
+                        onClick={() => handleSize(option.size)}
+                        style={{ backgroundColor: size === option.size ? '#1c4269' : '#5b7fa6' }}
+                    >
+                        {option.label} — {option.tokenCost} токенов
+                    </button>
+                ))}
             </div>
 
             <button className="create-button" onClick={handleCreateSummary} disabled={loading || hasActiveTask}>
@@ -453,14 +473,11 @@ export default function App({ user, onUserUpdate }) {
                         <p className="title">Статус: {statusMessage}</p>
                         <div className="todo-list">
                             {TODO_STEPS.map((step) => {
-                                const activeStage = getActiveStage({ taskStatus, taskStage, downloadReady });
-                                const stepState = getStepState(step.key, activeStage, taskStatus === 'failed');
+                                const state = getTodoState(step.key, taskStatus);
                                 return (
-                                    <div key={step.key} className={`todo-item todo-${stepState}`}>
-                                        <span className="todo-marker">
-                                            {stepState === 'done' ? '✓' : stepState === 'active' ? '•' : stepState === 'error' ? '!' : '○'}
-                                        </span>
-                                        <span>{step.title}</span>
+                                    <div key={step.key} className={`todo-item todo-${state}`}>
+                                        <span className="todo-marker">{state === 'done' ? '✓' : state === 'active' ? '•' : state === 'error' ? '!' : '○'}</span>
+                                        <span>{step.title}: {getTodoStateLabel(state)}</span>
                                     </div>
                                 );
                             })}
